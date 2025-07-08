@@ -4,11 +4,16 @@ import Icon from '../AppIcon';
 import SearchBar from './SearchBar';
 import UserAuthMenu from './UserAuthMenu';
 import ComparisonCart from './ComparisonCart';
+import AuthModal from './AuthModal';
+import { useAuth } from '../../hooks/useAuth';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('signin');
   const location = useLocation();
+  const { user } = useAuth();
 
   const navigationItems = [
     { label: 'Home', path: '/homepage', icon: 'Home' },
@@ -39,6 +44,10 @@ const Header = () => {
     return location.pathname === path;
   };
 
+  const handleAuthClick = (mode) => {
+    setAuthMode(mode);
+    setAuthModalOpen(true);
+  };
   return (
     <>
       <header 
@@ -88,7 +97,24 @@ const Header = () => {
             {/* Desktop Right Section */}
             <div className="hidden lg:flex items-center space-x-4">
               <ComparisonCart />
-              <UserAuthMenu />
+              {user ? (
+                <UserAuthMenu />
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleAuthClick('signin')}
+                    className="text-text-secondary hover:text-text-primary transition-fast"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => handleAuthClick('signup')}
+                    className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary-600 transition-fast"
+                  >
+                    Sign Up
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Mobile Right Section */}
@@ -132,7 +158,24 @@ const Header = () => {
               </nav>
               
               <div className="mt-4 pt-4 border-t border-border">
-                <UserAuthMenu isMobile={true} />
+                {user ? (
+                  <UserAuthMenu isMobile={true} />
+                ) : (
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => handleAuthClick('signin')}
+                      className="w-full text-left px-4 py-3 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface transition-fast"
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      onClick={() => handleAuthClick('signup')}
+                      className="w-full bg-primary text-primary-foreground px-4 py-3 rounded-lg hover:bg-primary-600 transition-fast"
+                    >
+                      Sign Up
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -146,6 +189,12 @@ const Header = () => {
           onClick={closeMobileMenu}
         />
       )}
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        defaultMode={authMode}
+      />
     </>
   );
 };

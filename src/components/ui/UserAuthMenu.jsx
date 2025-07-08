@@ -2,58 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
+import { useAuth } from '../../hooks/useAuth';
+import { useToast } from './Toast';
 
 const UserAuthMenu = ({ isMobile = false }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const { user, profile, loading, signOut } = useAuth();
+  const { success } = useToast();
 
-  // Mock user data - in real app, this would come from auth context
-  const mockUser = {
-    id: 1,
-    name: 'John Developer',
-    email: 'john@example.com',
-    avatar: '/assets/images/avatar-placeholder.png',
-    role: 'admin', // 'user' | 'admin' | 'moderator'
-    preferences: {
-      theme: 'dark',
-      notifications: true
-    }
-  };
-
-  useEffect(() => {
-    // Simulate auth check
-    const checkAuthStatus = async () => {
-      setIsLoading(true);
-      try {
-        // In real app, check localStorage/sessionStorage or make API call
-        const savedAuth = localStorage.getItem('isAuthenticated');
-        const savedUser = localStorage.getItem('user');
-        
-        if (savedAuth === 'true' && savedUser) {
-          setIsAuthenticated(true);
-          setUser(JSON.parse(savedUser));
-        } else {
-          // For demo purposes, set mock user as authenticated
-          setIsAuthenticated(true);
-          setUser(mockUser);
-          localStorage.setItem('isAuthenticated', 'true');
-          localStorage.setItem('user', JSON.stringify(mockUser));
-        }
-      } catch (error) {
-        console.error('Auth check error:', error);
-        setIsAuthenticated(false);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuthStatus();
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -70,23 +28,13 @@ const UserAuthMenu = ({ isMobile = false }) => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  const handleLogin = () => {
-    // In real app, redirect to login page or open login modal
-    navigate('/login');
-  };
-
-  const handleSignup = () => {
-    // In real app, redirect to signup page or open signup modal
-    navigate('/signup');
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (!error) {
+      success('Successfully signed out');
+      navigate('/homepage');
+    }
     setIsDropdownOpen(false);
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('user');
-    navigate('/homepage');
   };
 
   const menuItems = [
@@ -102,7 +50,7 @@ const UserAuthMenu = ({ isMobile = false }) => {
     { label: 'User Management', icon: 'Users', path: '/admin/users' },
   ];
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center space-x-2">
         <div className="w-8 h-8 bg-surface rounded-full animate-pulse"></div>
@@ -111,23 +59,10 @@ const UserAuthMenu = ({ isMobile = false }) => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return (
       <div className={`flex items-center ${isMobile ? 'flex-col space-y-2' : 'space-x-2'}`}>
-        <Button
-          variant="ghost"
-          onClick={handleLogin}
-          className={isMobile ? 'w-full justify-center' : ''}
-        >
-          Sign In
-        </Button>
-        <Button
-          variant="primary"
-          onClick={handleSignup}
-          className={isMobile ? 'w-full justify-center' : ''}
-        >
-          Sign Up
-        </Button>
+        <p className="text-text-secondary text-sm">Please sign in to continue</p>
       </div>
     );
   }
@@ -138,11 +73,11 @@ const UserAuthMenu = ({ isMobile = false }) => {
         <div className="flex items-center space-x-3 p-3 bg-surface rounded-lg">
           <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
             <span className="text-sm font-semibold text-white">
-              {user.name.split(' ').map(n => n[0]).join('')}
+              {(profile?.full_name || user.email).split(' ').map(n => n[0]).join('')}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-text-primary truncate">{user.name}</div>
+            <div className="font-medium text-text-primary truncate">{profile?.full_name || 'User'}</div>
             <div className="text-sm text-text-secondary truncate">{user.email}</div>
           </div>
         </div>
@@ -159,7 +94,7 @@ const UserAuthMenu = ({ isMobile = false }) => {
             </Link>
           ))}
 
-          {user.role === 'admin' && (
+          {profile?.role === 'admin' && (
             <>
               <div className="border-t border-border my-2"></div>
               {adminMenuItems.map((item) => (
@@ -235,7 +170,7 @@ const UserAuthMenu = ({ isMobile = false }) => {
               </Link>
             ))}
 
-            {user.role === 'admin' && (
+            {profile?.role === 'admin' && (
               <>
                 <div className="border-t border-border my-2"></div>
                 {adminMenuItems.map((item) => (
