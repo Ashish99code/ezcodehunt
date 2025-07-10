@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Icon from '../AppIcon';
 import Button from './Button';
 import Input from './Input';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import { useToast } from './Toast';
 
 const AuthModal = ({ isOpen, onClose, defaultMode = 'signin' }) => {
